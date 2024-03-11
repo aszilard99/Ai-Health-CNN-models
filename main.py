@@ -326,7 +326,7 @@ def vgg16ExtendedWithKaggleBrain():
 
     start_time = time.time()
 
-    model.fit(x=X_train, y=y_train, batch_size=32, epochs=5, validation_data=(X_val, y_val),
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=4, validation_data=(X_val, y_val),
               callbacks=[tensorboard, checkpoint])
 
     end_time = time.time()
@@ -334,9 +334,6 @@ def vgg16ExtendedWithKaggleBrain():
     print(f"Elapsed time: {hms_string(execution_time)}")
 
     history = model.history.history
-
-    for key in history.keys():
-        print(key)
 
     #plot_metrics(history)
 

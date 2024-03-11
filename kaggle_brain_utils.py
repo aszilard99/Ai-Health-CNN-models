@@ -227,28 +227,31 @@ def plot_metrics(history):
 def createStatistics(model, testx, testy) :
 
     pred = model.predict(testx)
-    Y_pred = np.argmax(pred, 1)
 
-    print(f'{Y_pred.shape} Y_pred.shape')
+    predThreshold = list(map(threshold, pred))
+
+    print(f'{pred.shape} pred.shape')
 
     print(f'{testy.shape} testy.shape')
 
-    print(f'{Y_pred}Y_pred')
-
+    #print(f'pred {pred}')
+    #print(f'Y_pred {Y_pred}')
+    #print(f'testy {testy}')
+    #print(f'predThreshold {predThreshold}')
     print('Confusion Matrix')
-    print(confusion_matrix(testy, Y_pred))
+    print(confusion_matrix(testy, predThreshold))
 
-    cm = confusion_matrix(testy, Y_pred)
-    sns.heatmap(cm, square=True, annot=True, cbar=False, cmap=plt.cm.Blues)
+    cm = confusion_matrix(testy, predThreshold)
+    sns.heatmap(cm, square=True, annot=True, cbar=False, cmap=plt.cm.Blues, fmt='d')
     plt.xlabel('Predicted Values')
     plt.ylabel('True Values')
 
     print('Classification Report')
     target_names = ['Tumor', 'No tumor']
-    print(classification_report(testy, Y_pred, target_names=target_names))
+    print(classification_report(testy, predThreshold, target_names=target_names))
 
     ax = plt.subplot()
-    sns.heatmap(cm, annot=True, ax=ax)  # annot=True to annotate cells
+    sns.heatmap(cm, annot=True, ax=ax, fmt='d')  # annot=True to annotate cells
     plt.show()
 
     # labels, title and ticks
@@ -258,21 +261,21 @@ def createStatistics(model, testx, testy) :
     ax.xaxis.set_ticklabels(target_names)
     ax.yaxis.set_ticklabels(target_names)
 
-    results = confusion_matrix(testy, Y_pred)
+    results = confusion_matrix(testy, predThreshold)
     print('Confusion Matrix :')
     print(results)
-    print('Accuracy Score :', accuracy_score(testy, Y_pred))
+    print('Accuracy Score :', accuracy_score(testy, predThreshold))
     print('Report : ')
-    print(classification_report(testy, Y_pred))
+    print(classification_report(testy, predThreshold))
 
     sns.heatmap(results / np.sum(results), annot=True,
                 fmt='.2%', cmap='Blues')
 
-    fpr, tpr, thresholds = metrics.roc_curve(testy, Y_pred, pos_label=2)
+    fpr, tpr, thresholds = metrics.roc_curve(testy, predThreshold, pos_label=2)
     metrics.auc(fpr, tpr)
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(fpr, tpr)
+    ax.plot(fpr, tpr, label='actual', linestyle='solid')
     ax.plot(np.linspace(0, 1, 100),
             np.linspace(0, 1, 100),
             label='baseline',
@@ -281,3 +284,6 @@ def createStatistics(model, testx, testy) :
     plt.ylabel('Total Positive Rate', fontsize=12)
     plt.xlabel('False Positive Rate', fontsize=12)
     plt.legend(fontsize=12)
+    plt.show()
+def threshold(n):
+     return 1 if n >= 0.5 else 0
