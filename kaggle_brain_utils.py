@@ -202,20 +202,25 @@ def build_vgg16extended_model(input_shape):
 
   return model
 
-def build_vgg16_model():
+def build_vgg16_model(input_shape):
 
     #by keras docs input shape has to be (240,240,3) if include_top is true
     #when using pretrained weights final activation function can only be
-  conv = VGG16(weights='imagenet',include_top=True)
+    conv = VGG16(input_shape=input_shape, weights='imagenet', include_top=False)
 
-  for layer in conv.layers:
-    layer.trainable = False
+    for layer in conv.layers:
+        layer.trainable = False
 
-  x = conv.output
-  pred = Dense(1,activation='sigmoid')(x)
-  model = Model(inputs = conv.input,outputs=pred, name='VGG16')
+    x = conv.output
+    x = Flatten()(x)
+    x = Dense(units=4096,activation="relu")(x)
+    x = Dense(units=4096,activation="relu")(x)
+    pred = Dense(units=1, activation="sigmoid")(x)
+    model = Model(inputs=conv.input, outputs=pred, name='VGG16')
 
-  return model
+
+
+    return model
 
 def plot_metrics(history):
 

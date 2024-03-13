@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
+import keras
 
 from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, hms_string, split_data, plot_metrics, measureModelPerformance
 
@@ -341,12 +342,12 @@ def vgg16ExtendedWithKaggleBrain():
 
 def vgg16WithKaggleBrain():
     IMG_WIDTH, IMG_HEIGHT = (224, 224)
-    #IMG_SHAPE = (IMG_WIDTH, IMG_HEIGHT, 3)
+    IMG_SHAPE = (IMG_WIDTH, IMG_HEIGHT, 3)
 
     X, y = load_data(filePath + '/' + 'augmented_data', ['no', 'yes'], (IMG_WIDTH, IMG_HEIGHT))
     X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
 
-    model = build_vgg16_model()
+    model = build_vgg16_model(IMG_SHAPE)
     model.summary()
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     # tensorboard
@@ -361,7 +362,7 @@ def vgg16WithKaggleBrain():
 
     start_time = time.time()
 
-    model.fit(x=X_train, y=y_train, batch_size=32, epochs=4, validation_data=(X_val, y_val),
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=40, validation_data=(X_val, y_val),
               callbacks=[tensorboard, checkpoint])
 
     end_time = time.time()
