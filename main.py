@@ -326,7 +326,7 @@ def vgg16ExtendedWithKaggleBrain():
 
     start_time = time.time()
 
-    model.fit(x=X_train, y=y_train, batch_size=32, epochs=3, validation_data=(X_val, y_val),
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=40, validation_data=(X_val, y_val),
               callbacks=[tensorboard, checkpoint])
 
     end_time = time.time()
