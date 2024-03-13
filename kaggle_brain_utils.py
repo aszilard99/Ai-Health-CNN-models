@@ -184,7 +184,7 @@ def hms_string(sec_elapsed):
     s = sec_elapsed % 60
     return f"{h}:{m}:{round(s,1)}"
 
-def build_model(input_shape):
+def build_vgg16extended_model(input_shape):
 
   conv = VGG16(input_shape= input_shape, weights='imagenet',include_top=False)
 
@@ -198,7 +198,22 @@ def build_model(input_shape):
   x = Dense(512, activation='relu')(x)
   x = Dropout(.2)(x)
   pred = Dense(1,activation='sigmoid')(x)
-  model = Model(inputs = conv.input,outputs=pred, name='VGG16PlusBrainDetectionModel')
+  model = Model(inputs = conv.input,outputs=pred, name='VGG16Extended')
+
+  return model
+
+def build_vgg16_model():
+
+    #by keras docs input shape has to be (240,240,3) if include_top is true
+    #when using pretrained weights final activation function can only be
+  conv = VGG16(weights='imagenet',include_top=True)
+
+  for layer in conv.layers:
+    layer.trainable = False
+
+  x = conv.output
+  pred = Dense(1,activation='sigmoid')(x)
+  model = Model(inputs = conv.input,outputs=pred, name='VGG16')
 
   return model
 

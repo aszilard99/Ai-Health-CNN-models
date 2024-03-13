@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 
-from kaggle_brain_utils import  crop_brain_contour, load_data, build_model, hms_string, split_data, plot_metrics, measureModelPerformance
+from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, hms_string, split_data, plot_metrics, measureModelPerformance
 
 epochs = 2
 basePath = Path(__file__).parent
@@ -311,7 +311,7 @@ def vgg16ExtendedWithKaggleBrain():
     X, y = load_data(filePath+'/' + 'augmented_data',['no', 'yes'], (IMG_WIDTH, IMG_HEIGHT))
     X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
 
-    model = build_model(IMG_SHAPE)
+    model = build_vgg16extended_model(IMG_SHAPE)
     model.summary()
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     # tensorboard
@@ -339,10 +339,45 @@ def vgg16ExtendedWithKaggleBrain():
 
     measureModelPerformance(model=model, testx=X_test, testy=y_test)
 
+def vgg16WithKaggleBrain():
+    IMG_WIDTH, IMG_HEIGHT = (224, 224)
+    #IMG_SHAPE = (IMG_WIDTH, IMG_HEIGHT, 3)
+
+    X, y = load_data(filePath + '/' + 'augmented_data', ['no', 'yes'], (IMG_WIDTH, IMG_HEIGHT))
+    X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
+
+    model = build_vgg16_model()
+    model.summary()
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    # tensorboard
+    log_file_name = f'brain_tumor_detection_cnn_{int(time.time())}'
+    tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
+
+    # checkpoint
+    # unique file name that will include the epoch and the validation (development) accuracy
+    modelPath = f"{filePath}/vgg16-cnn-parameters-improvement.model"
+    # save the model with the best validation (development) accuracy till now
+    checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+
+    start_time = time.time()
+
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=4, validation_data=(X_val, y_val),
+              callbacks=[tensorboard, checkpoint])
+
+    end_time = time.time()
+    execution_time = (end_time - start_time)
+    print(f"Elapsed time: {hms_string(execution_time)}")
+
+    history = model.history.history
+
+    plot_metrics(history)
+
+    measureModelPerformance(model=model, testx=X_test, testy=y_test)
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    vgg16ExtendedWithKaggleBrain()
+    vgg16WithKaggleBrain()
 
     #trainx, testx, trainy, testy = loadData()
     #model = build_model_vgg16_plus();
