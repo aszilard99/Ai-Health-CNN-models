@@ -204,8 +204,6 @@ def build_vgg16extended_model(input_shape):
 
 def build_vgg16_model(input_shape):
 
-    #by keras docs input shape has to be (240,240,3) if include_top is true
-    #when using pretrained weights final activation function can only be
     conv = VGG16(input_shape=input_shape, weights='imagenet', include_top=False)
 
     for layer in conv.layers:
@@ -218,7 +216,35 @@ def build_vgg16_model(input_shape):
     pred = Dense(units=1, activation="sigmoid")(x)
     model = Model(inputs=conv.input, outputs=pred, name='VGG16')
 
+    return model
 
+
+def build_simple_cnn(input_shape):
+
+    # Define the input placeholder as a tensor with shape input_shape.
+    X_input = Input(input_shape) # shape=(?, 240, 240, 3)
+
+    # Zero-Padding: pads the border of X_input with zeroes
+    X = ZeroPadding2D((2, 2))(X_input) # shape=(?, 244, 244, 3)
+
+    # CONV -> BN -> RELU Block applied to X
+    X = Conv2D(32, (7, 7), strides = (1, 1))(X)
+    X = BatchNormalization(axis = 3)(X)
+    X = Activation('relu')(X) # shape=(?, 238, 238, 32)
+
+    # MAXPOOL
+    X = MaxPooling2D((4, 4))(X) # shape=(?, 59, 59, 32)
+
+    # MAXPOOL
+    X = MaxPooling2D((4, 4))(X) # shape=(?, 14, 14, 32)
+
+    # FLATTEN X
+    X = Flatten()(X) # shape=(?, 6272)
+    # FULLYCONNECTED
+    X = Dense(1, activation='sigmoid')(X) # shape=(?, 1)
+
+    # Create model. This creates your Keras model instance, you'll use this instance to train/test the model.
+    model = Model(inputs = X_input, outputs = X, name='SimpleCNN')
 
     return model
 

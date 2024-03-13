@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import h5py
 import keras
 
-from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, hms_string, split_data, plot_metrics, measureModelPerformance
+from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance
 
 epochs = 2
 basePath = Path(__file__).parent
@@ -155,95 +155,6 @@ def createModel() :
 
     return model
 
-def build_model_seven_layer():
-
-    import tensorflow as tf
-    from tensorflow.keras.layers import Conv2D, Input, ZeroPadding2D, BatchNormalization, Activation, MaxPooling2D, \
-        Flatten, Dense
-    from tensorflow.keras.models import Model, load_model
-    from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import f1_score
-    from sklearn.utils import shuffle
-    #import cv2
-    import imutils
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import time
-    from os import listdir
-
-    input_shape = (240, 240, 3);
-
-    """
-    Arugments:
-        input_shape: A tuple representing the shape of the input of the model. shape=(image_width, image_height, #_channels)
-    Returns:
-        model: A Model object.
-    """
-    # Define the input placeholder as a tensor with shape input_shape.
-    X_input = Input(input_shape) # shape=(?, 240, 240, 3)
-
-    # Zero-Padding: pads the border of X_input with zeroes
-    X = ZeroPadding2D((2, 2))(X_input) # shape=(?, 244, 244, 3)
-
-    # CONV -> BN -> RELU Block applied to X
-    X = Conv2D(32, (7, 7), strides = (1, 1))(X)
-    X = BatchNormalization(axis = 3)(X)
-    X = Activation('relu')(X) # shape=(?, 238, 238, 32)
-
-    # MAXPOOL
-    X = MaxPooling2D((4, 4))(X) # shape=(?, 59, 59, 32)
-
-    # MAXPOOL
-    X = MaxPooling2D((4, 4))(X) # shape=(?, 14, 14, 32)
-
-    # FLATTEN X
-    X = Flatten()(X) # shape=(?, 6272)
-    # FULLYCONNECTED
-    X = Dense(1, activation='sigmoid')(X) # shape=(?, 1)
-
-    # Create model. This creates your Keras model instance, you'll use this instance to train/test the model.
-    model = Model(inputs = X_input, outputs = X, name='BrainDetectionModel')
-
-    return model
-
-def build_model_vgg16_plus():
-    import tensorflow as tf
-    from tensorflow.keras.layers import Conv2D, Input, ZeroPadding2D, BatchNormalization, Activation, MaxPooling2D, \
-        Flatten, Dense, GlobalAveragePooling2D, Dropout
-    from tensorflow.keras.models import Model, load_model
-    from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
-    from tensorflow.keras.applications.vgg16 import VGG16
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import f1_score
-    from sklearn.utils import shuffle
-    #import cv2
-    import imutils
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import time
-    from os import listdir
-
-    input_shape = (240, 240, 3)
-
-    conv = VGG16(input_shape= input_shape, weights='imagenet',include_top=False)
-
-    for layer in conv.layers:
-        layer.trainable = False
-
-    x = conv.output
-    x = GlobalAveragePooling2D()(x)
-    x = Dense(1024,activation='relu')(x)
-    x = Dense(1024,activation='relu')(x)
-    x = Dense(512, activation='relu')(x)
-    x = Dropout(.2)(x)
-    pred = Dense(2, activation='sigmoid')(x)
-    model = Model(inputs = conv.input, outputs=pred, name='VGG16PlusBrainDetectionModel')
-
-    model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-
-    return model
-
 def runSavedModelWithStatistics() :
     model = createModel()
     savedModel = loadModelWeights(model)
@@ -375,10 +286,44 @@ def vgg16WithKaggleBrain():
 
     measureModelPerformance(model=model, testx=X_test, testy=y_test)
 
+def simpleCnnWithKaggleBrain():
+    IMG_WIDTH, IMG_HEIGHT = (240, 240)
+    IMG_SHAPE = (IMG_WIDTH, IMG_HEIGHT, 3)
+
+    X, y = load_data(filePath + '/' + 'augmented_data', ['no', 'yes'], (IMG_WIDTH, IMG_HEIGHT))
+    X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
+
+    model = build_simple_cnn(IMG_SHAPE)
+    model.summary()
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    # tensorboard
+    log_file_name = f'brain_tumor_detection_cnn_{int(time.time())}'
+    tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
+
+    # checkpoint
+    # unique file name that will include the epoch and the validation (development) accuracy
+    modelPath = f"{filePath}/simple-cnn-parameters-improvement.model"
+    # save the model with the best validation (development) accuracy till now
+    checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+
+    start_time = time.time()
+
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=40, validation_data=(X_val, y_val),
+              callbacks=[tensorboard, checkpoint])
+
+    end_time = time.time()
+    execution_time = (end_time - start_time)
+    print(f"Elapsed time: {hms_string(execution_time)}")
+
+    history = model.history.history
+
+    plot_metrics(history)
+
+    measureModelPerformance(model=model, testx=X_test, testy=y_test)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    vgg16WithKaggleBrain()
+    simpleCnnWithKaggleBrain()
 
     #trainx, testx, trainy, testy = loadData()
     #model = build_model_vgg16_plus();
