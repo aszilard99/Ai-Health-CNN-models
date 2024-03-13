@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from sklearn import metrics
 import seaborn as sns
+import pandas as pd
 
 from os import listdir
 
@@ -212,6 +213,9 @@ def plot_metrics(history):
     plt.figure()
     plt.plot(train_loss, label='Training Loss')
     plt.plot(val_loss, label='Validation Loss')
+    plt.xticks(np.arange(0, 44, 4))
+    plt.ylabel('Loss Value')
+    plt.xlabel('Epoch')
     plt.title('Loss')
     plt.legend()
     plt.show()
@@ -220,40 +224,44 @@ def plot_metrics(history):
     plt.figure()
     plt.plot(train_acc, label='Training Accuracy')
     plt.plot(val_acc, label='Validation Accuracy')
+    plt.xticks(np.arange(0, 44, 4))
+    plt.ylabel('Accuracy Value')
+    plt.xlabel('Epoch')
     plt.title('Accuracy')
     plt.legend()
     plt.show()
 
-def createStatistics(model, testx, testy) :
+def measureModelPerformance(model, testx, testy) :
 
     pred = model.predict(testx)
 
     predThreshold = list(map(threshold, pred))
 
+    target_names = ['No tumor', 'Tumor']
+
     print(f'{pred.shape} pred.shape')
 
     print(f'{testy.shape} testy.shape')
 
-    #print(f'pred {pred}')
-    #print(f'Y_pred {Y_pred}')
-    #print(f'testy {testy}')
-    #print(f'predThreshold {predThreshold}')
+    tn, fp, fn, tp = confusion_matrix(testy, predThreshold).ravel()
+    print(f"tn:{tn} fp:{fp} fn:{fn} tp:{tp}")
+
     print('Confusion Matrix')
     print(confusion_matrix(testy, predThreshold))
 
-    cm = confusion_matrix(testy, predThreshold)
-    sns.heatmap(cm, square=True, annot=True, cbar=False, cmap=plt.cm.Blues, fmt='d')
-    plt.xlabel('Predicted Values')
-    plt.ylabel('True Values')
-
     print('Classification Report')
-    target_names = ['Tumor', 'No tumor']
     print(classification_report(testy, predThreshold, target_names=target_names))
 
-    ax = plt.subplot()
-    sns.heatmap(cm, annot=True, ax=ax, fmt='d')  # annot=True to annotate cells
+    cm = confusion_matrix(testy, predThreshold)
+
+    df_cm = pd.DataFrame(cm, target_names, target_names)
+    sns.heatmap(df_cm, annot=True, cmap='viridis', fmt='d')
+    plt.xlabel('Predicted Values')
+    plt.ylabel('True Values')
+    plt.title('Confusion Matrix')
     plt.show()
 
+    ax = plt.subplot()
     # labels, title and ticks
     ax.set_xlabel('Predicted labels')
     ax.set_ylabel('True labels')
@@ -261,17 +269,7 @@ def createStatistics(model, testx, testy) :
     ax.xaxis.set_ticklabels(target_names)
     ax.yaxis.set_ticklabels(target_names)
 
-    results = confusion_matrix(testy, predThreshold)
-    print('Confusion Matrix :')
-    print(results)
-    print('Accuracy Score :', accuracy_score(testy, predThreshold))
-    print('Report : ')
-    print(classification_report(testy, predThreshold))
-
-    sns.heatmap(results / np.sum(results), annot=True,
-                fmt='.2%', cmap='Blues')
-
-    fpr, tpr, thresholds = metrics.roc_curve(testy, predThreshold, pos_label=2)
+    fpr, tpr, thresholds = metrics.roc_curve(testy, pred)
     metrics.auc(fpr, tpr)
 
     fig, ax = plt.subplots(figsize=(8, 5))

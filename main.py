@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 
-from kaggle_brain_utils import  crop_brain_contour, load_data, build_model, hms_string, split_data, plot_metrics, createStatistics
+from kaggle_brain_utils import  crop_brain_contour, load_data, build_model, hms_string, split_data, plot_metrics, measureModelPerformance
 
 epochs = 2
 basePath = Path(__file__).parent
@@ -247,7 +247,7 @@ def runSavedModelWithStatistics() :
     model = createModel()
     savedModel = loadModelWeights(model)
     trainx, testx, trainy, testy = loadData()
-    createStatistics(model=model, testx=testx, testy=testy)
+    measureModelPerformance(model=model, testx=testx, testy=testy)
 
 
 def displayImage(fileName) :
@@ -326,7 +326,7 @@ def vgg16ExtendedWithKaggleBrain():
 
     start_time = time.time()
 
-    model.fit(x=X_train, y=y_train, batch_size=32, epochs=4, validation_data=(X_val, y_val),
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=3, validation_data=(X_val, y_val),
               callbacks=[tensorboard, checkpoint])
 
     end_time = time.time()
@@ -335,9 +335,9 @@ def vgg16ExtendedWithKaggleBrain():
 
     history = model.history.history
 
-    #plot_metrics(history)
+    plot_metrics(history)
 
-    createStatistics(model=model, testx=X_test, testy=y_test)
+    measureModelPerformance(model=model, testx=X_test, testy=y_test)
 
 
 # Press the green button in the gutter to run the script.
