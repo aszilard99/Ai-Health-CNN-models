@@ -6,5 +6,6 @@ logs/
 __pycache__/
 Scripts/
 share/
+resources/
 /pyvenv.cfg
 /*.png

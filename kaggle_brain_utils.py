@@ -1,17 +1,17 @@
-import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Input, ZeroPadding2D, BatchNormalization, Activation, MaxPooling2D, Flatten, Dense, GlobalAveragePooling2D,Dropout
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.applications.vgg16 import VGG16
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score
-from sklearn.utils import shuffle
 import cv2
 import imutils
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
+from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
+from sklearn import metrics
+import seaborn as sns
 
 from os import listdir
-
 
 def load_data(resources_path , dir_list, image_size):
     """
@@ -223,3 +223,67 @@ def plot_metrics(history):
     plt.title('Accuracy')
     plt.legend()
     plt.show()
+
+def createStatistics(model, testx, testy) :
+
+    pred = model.predict(testx)
+
+    predThreshold = list(map(threshold, pred))
+
+    print(f'{pred.shape} pred.shape')
+
+    print(f'{testy.shape} testy.shape')
+
+    #print(f'pred {pred}')
+    #print(f'Y_pred {Y_pred}')
+    #print(f'testy {testy}')
+    #print(f'predThreshold {predThreshold}')
+    print('Confusion Matrix')
+    print(confusion_matrix(testy, predThreshold))
+
+    cm = confusion_matrix(testy, predThreshold)
+    sns.heatmap(cm, square=True, annot=True, cbar=False, cmap=plt.cm.Blues, fmt='d')
+    plt.xlabel('Predicted Values')
+    plt.ylabel('True Values')
+
+    print('Classification Report')
+    target_names = ['Tumor', 'No tumor']
+    print(classification_report(testy, predThreshold, target_names=target_names))
+
+    ax = plt.subplot()
+    sns.heatmap(cm, annot=True, ax=ax, fmt='d')  # annot=True to annotate cells
+    plt.show()
+
+    # labels, title and ticks
+    ax.set_xlabel('Predicted labels')
+    ax.set_ylabel('True labels')
+    ax.set_title('Confusion Matrix')
+    ax.xaxis.set_ticklabels(target_names)
+    ax.yaxis.set_ticklabels(target_names)
+
+    results = confusion_matrix(testy, predThreshold)
+    print('Confusion Matrix :')
+    print(results)
+    print('Accuracy Score :', accuracy_score(testy, predThreshold))
+    print('Report : ')
+    print(classification_report(testy, predThreshold))
+
+    sns.heatmap(results / np.sum(results), annot=True,
+                fmt='.2%', cmap='Blues')
+
+    fpr, tpr, thresholds = metrics.roc_curve(testy, predThreshold, pos_label=2)
+    metrics.auc(fpr, tpr)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(fpr, tpr, label='actual', linestyle='solid')
+    ax.plot(np.linspace(0, 1, 100),
+            np.linspace(0, 1, 100),
+            label='baseline',
+            linestyle='--')
+    plt.title('Receiver Operating Characteristic Curve', fontsize=14)
+    plt.ylabel('Total Positive Rate', fontsize=12)
+    plt.xlabel('False Positive Rate', fontsize=12)
+    plt.legend(fontsize=12)
+    plt.show()
+def threshold(n):
+     return 1 if n >= 0.5 else 0

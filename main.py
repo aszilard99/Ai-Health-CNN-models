@@ -10,9 +10,11 @@ import time
 from tensorflow.keras.utils import plot_model
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from pathlib import Path
-from os import listdir
+import numpy as np
+import matplotlib.pyplot as plt
+import h5py
 
-from kaggle_brain_utils import  crop_brain_contour, load_data, build_model, hms_string, split_data, plot_metrics
+from kaggle_brain_utils import  crop_brain_contour, load_data, build_model, hms_string, split_data, plot_metrics, createStatistics
 
 epochs = 2
 basePath = Path(__file__).parent
@@ -241,72 +243,6 @@ def build_model_vgg16_plus():
 
     return model
 
-def createStatistics(model, testx, testy) :
-
-    import matplotlib.pyplot as plt
-    import numpy as np
-    from sklearn import metrics
-    from sklearn.metrics import classification_report, confusion_matrix
-    import seaborn as sns
-    from sklearn.metrics import accuracy_score
-
-    pred = model.predict(testx)
-    Y_pred = np.argmax(pred, 1)
-
-    Y_pred.shape
-
-    testy.shape
-
-    Y_pred
-
-    print('Confusion Matrix')
-    print(confusion_matrix(testy, Y_pred))
-
-    cm = confusion_matrix(testy, Y_pred)
-    sns.heatmap(cm, square=True, annot=True, cbar=False, cmap=plt.cm.Blues)
-    plt.xlabel('Predicted Values')
-    plt.ylabel('True Values');
-
-    print('Classification Report')
-    target_names = ['Meningioma', 'Glioma', 'Pituitary']
-    print(classification_report(testy, Y_pred, target_names=target_names))
-
-    print(trainy)
-
-    ax = plt.subplot()
-    sns.heatmap(cm, annot=True, ax=ax);  # annot=True to annotate cells
-
-    # labels, title and ticks
-    ax.set_xlabel('Predicted labels');
-    ax.set_ylabel('True labels');
-    ax.set_title('Confusion Matrix');
-    ax.xaxis.set_ticklabels(['Meningioma', 'Glioma', 'Pituitary']);
-    ax.yaxis.set_ticklabels(['Meningioma', 'Glioma', 'Pituitary'])
-
-    results = confusion_matrix(testy, Y_pred)
-    print('Confusion Matrix :')
-    print(results)
-    print('Accuracy Score :', accuracy_score(testy, Y_pred))
-    print('Report : ')
-    print(classification_report(testy, Y_pred))
-
-    sns.heatmap(results / np.sum(results), annot=True,
-                fmt='.2%', cmap='Blues')
-
-    fpr, tpr, thresholds = metrics.roc_curve(testy, Y_pred, pos_label=2)
-    metrics.auc(fpr, tpr)
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(fpr, tpr)
-    ax.plot(np.linspace(0, 1, 100),
-            np.linspace(0, 1, 100),
-            label='baseline',
-            linestyle='--')
-    plt.title('Receiver Operating Characteristic Curve', fontsize=14)
-    plt.ylabel('Total Positive Rate', fontsize=12)
-    plt.xlabel('False Positive Rate', fontsize=12)
-    plt.legend(fontsize=12);
-
 def runSavedModelWithStatistics() :
     model = createModel()
     savedModel = loadModelWeights(model)
@@ -315,12 +251,6 @@ def runSavedModelWithStatistics() :
 
 
 def displayImage(fileName) :
-    import scipy
-    import sklearn
-    import numpy as np
-    from sklearn.feature_extraction import image
-    import matplotlib.pyplot as plt
-    import h5py
 
     with h5py.File(f'{filePath}/Brain_MRI2/BRAIN_DATA/{fileName}.mat', 'r') as file:
         data = file.get('cjdata/image')
@@ -330,12 +260,6 @@ def displayImage(fileName) :
         plt.show()
 
 def exploratoryDataAnalysis():
-    import scipy
-    import sklearn
-    import numpy as np
-    from sklearn.feature_extraction import image
-    import matplotlib.pyplot as plt
-    import h5py
 
     data_dir = f'{filePath}/Brain_MRI2/BRAIN_DATA'
 
@@ -402,7 +326,7 @@ def vgg16ExtendedWithKaggleBrain():
 
     start_time = time.time()
 
-    model.fit(x=X_train, y=y_train, batch_size=32, epochs=40, validation_data=(X_val, y_val),
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=4, validation_data=(X_val, y_val),
               callbacks=[tensorboard, checkpoint])
 
     end_time = time.time()
@@ -411,16 +335,14 @@ def vgg16ExtendedWithKaggleBrain():
 
     history = model.history.history
 
-    for key in history.keys():
-        print(key)
+    #plot_metrics(history)
 
-    plot_metrics(history)
+    createStatistics(model=model, testx=X_test, testy=y_test)
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    #vgg16ExtendedWithKaggleBrain()
-
-    print('hi')
+    vgg16ExtendedWithKaggleBrain()
 
     #trainx, testx, trainy, testy = loadData()
     #model = build_model_vgg16_plus();
