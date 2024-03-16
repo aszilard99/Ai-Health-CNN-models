@@ -42,7 +42,7 @@ def build_vgg16extended_model_figshare(input_shape):
 def loadFigshareData(filePath):
     data_dir = f'{filePath}/Brain_MRI2/BRAIN_DATA'
     #total_image = 3064
-    total_image = 100
+    total_image = 1200
     trainindata = []
     for i in range(1, total_image + 1):
       filename = str(i) + ".mat"

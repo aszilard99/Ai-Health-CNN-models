@@ -334,22 +334,23 @@ def measureModelPerformanceMulticlass(model, testx, testy) :
 
     pred = model.predict(testx)
 
-
-    predThreshold = np.argmax(pred, 1)
+    Y_pred = np.argmax(pred, 1)
 
     target_names = ['Meningioma', 'Glioma', 'Pituitary']
 
-    print(f'{pred.shape} pred.shape')
+    print(f'{Y_pred.shape} pred.shape')
+    print(f'{Y_pred} pred')
 
     print(f'{testy.shape} testy.shape')
+    print(f'{testy} testy')
 
     print('Confusion Matrix')
-    print(confusion_matrix(testy, predThreshold))
+    print(confusion_matrix(testy, Y_pred))
 
     print('Classification Report')
-    print(classification_report(testy, predThreshold, target_names=target_names))
+    print(classification_report(testy, Y_pred, target_names=target_names, labels=np.arange(0,len(target_names),1)))
 
-    cm = confusion_matrix(testy, predThreshold)
+    cm = confusion_matrix(testy, Y_pred)
 
     df_cm = pd.DataFrame(cm, target_names, target_names)
     sns.heatmap(df_cm, annot=True, cmap='viridis', fmt='d')
@@ -365,21 +366,6 @@ def measureModelPerformanceMulticlass(model, testx, testy) :
     ax.set_title('Confusion Matrix')
     ax.xaxis.set_ticklabels(target_names)
     ax.yaxis.set_ticklabels(target_names)
-
-    fpr, tpr, thresholds = metrics.roc_curve(testy, pred)
-    metrics.auc(fpr, tpr)
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(fpr, tpr, label='actual', linestyle='solid')
-    ax.plot(np.linspace(0, 1, 100),
-            np.linspace(0, 1, 100),
-            label='baseline',
-            linestyle='--')
-    plt.title('Receiver Operating Characteristic Curve', fontsize=14)
-    plt.ylabel('Total Positive Rate', fontsize=12)
-    plt.xlabel('False Positive Rate', fontsize=12)
-    plt.legend(fontsize=12)
-    plt.show()
 
 def threshold(n):
     print(f"threshold n {n}")
