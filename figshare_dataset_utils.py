@@ -40,10 +40,30 @@ def build_vgg16extended_model_figshare(input_shape):
 
   return model
 
+def build_vgg16_model_figshare(input_shape):
+
+    conv = VGG16(input_shape=input_shape, weights='imagenet', include_top=False)
+
+    for layer in conv.layers:
+        layer.trainable = False
+
+    x = conv.output
+    x = Flatten()(x)
+    x = Dense(units=4096,activation="relu")(x)
+    x = Dense(units=4096,activation="relu")(x)
+    pred = Dense(units=3, activation="softmax")(x)
+    model = Model(inputs=conv.input, outputs=pred, name='VGG16')
+
+    model.summary()
+
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+    return model
+
 def loadFigshareData(filePath):
     data_dir = f'{filePath}/Brain_MRI2/BRAIN_DATA'
     total_image = 3064
-    #total_image = 1200
+
     trainindata = []
     for i in range(1, total_image + 1):
       filename = str(i) + ".mat"

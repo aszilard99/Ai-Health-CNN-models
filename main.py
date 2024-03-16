@@ -1,3 +1,5 @@
+import gc
+
 import tensorflow as tf
 import os
 import numpy
@@ -16,7 +18,7 @@ import h5py
 import keras
 
 from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance, measureModelPerformanceMulticlass
-from figshare_dataset_utils import loadFigshareData, build_vgg16extended_model_figshare
+from figshare_dataset_utils import loadFigshareData, build_vgg16extended_model_figshare, build_vgg16_model_figshare
 
 
 epochs = 2
@@ -301,10 +303,48 @@ def vgg16ExtendedWithFigshareDataset():
 
     measureModelPerformanceMulticlass(model=model, testx=X_test, testy=y_test)
 
+def vgg16WithFigshareDataset():
+    IMG_SHAPE = (512, 512, 1)
+
+    X, y = loadFigshareData(filePath=filePath)
+    X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
+
+    print(len(X_train))
+    print(len(y_train))
+    print(len(X_val))
+    print(len(y_val))
+    print(len(X_test))
+    print(len(y_test))
+
+    model = build_vgg16_model_figshare(IMG_SHAPE)
+
+    #log_file_name = f'vgg16_with_figshare_dataset_{int(time.time())}'
+    #tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
+
+    # checkpoint
+    # unique file name that will include the epoch and the validation (development) accuracy
+    #modelPath = f"{filePath}/vgg16_with_figshare_dataset.model"
+    # save the model with the best validation (development) accuracy till now
+    #checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+
+    start_time = time.time()
+
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=2, validation_data=(X_val, y_val))
+
+    end_time = time.time()
+    execution_time = (end_time - start_time)
+    print(f"Elapsed time: {hms_string(execution_time)}")
+
+    history = model.history.history
+
+    plot_metrics(history)
+
+    measureModelPerformanceMulticlass(model=model, testx=X_test, testy=y_test)
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    vgg16ExtendedWithFigshareDataset()
+    vgg16WithFigshareDataset()
 
     #trainx, testx, trainy, testy = loadData()
     #model = build_model_vgg16_plus();

@@ -11,7 +11,7 @@ from sklearn.utils import shuffle
 from sklearn import metrics
 import seaborn as sns
 import pandas as pd
-
+import gc
 from os import listdir
 
 def load_data(resources_path , dir_list, image_size):
@@ -166,7 +166,16 @@ def split_data(X, y, test_size=0.2):
     """
 
     X_train, X_test_val, y_train, y_test_val = train_test_split(X, y, test_size=test_size)
+
+    del X
+    del y
+    gc.collect()
+
     X_test, X_val, y_test, y_val = train_test_split(X_test_val, y_test_val, test_size=0.5)
+
+    del X_test_val
+    del y_test_val
+    gc.collect()
 
     return X_train, y_train, X_val, y_val, X_test, y_test
 
