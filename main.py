@@ -16,6 +16,8 @@ import h5py
 import keras
 
 from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance
+from figshare_dataset_utils import loadFigshareData
+
 
 epochs = 2
 basePath = Path(__file__).parent
@@ -40,67 +42,6 @@ def trainModel(model, trainx, testx, trainy, testy) :
     model.save(f'{filePath}/my_model_epochs_{epochs}_{num}.h5')
 
     model.save_weights(f'{filePath}/my_weight_epochs_{epochs}__{num}')
-
-def loadData() :
-    data_dir = f'{filePath}/Brain_MRI2/BRAIN_DATA'
-    total_image = 3064
-    trainindata = []
-    for i in range(1, total_image + 1):
-        filename = str(i) + ".mat"
-        data = h5py.File(os.path.join(data_dir, filename), "r")
-        trainindata.append(data)
-
-        if i % 100 == 0:
-            print(filename)
-
-    print(trainindata[5])
-
-    import keras
-    import random
-
-    random.shuffle(trainindata)
-
-    import numpy as np
-
-    # Now take all the image as train and test
-    trainx = []
-    trainy = []
-    testx = []
-    testy = []
-
-    size = round(4 * total_image / 5)  # Split the dataset into 80:20
-    # For trainx and trainy
-    for i in range(size):
-        image = trainindata[i]["cjdata"]["image"][()]
-        if image.shape == (512, 512):
-            image = np.expand_dims(image, axis=0)
-            trainx.append(image)
-
-            # [()] operation is used to extract the value of the object
-            # [0][0] is needed at the end because it is a 2 dimension array with one value and we have to take out the scalar from it
-            label = int(trainindata[i]["cjdata"]["label"][()][0][0]) - 1
-            trainy.append(label)
-    # For trainx and trainy
-    for i in range(size, total_image):
-        image = trainindata[i]["cjdata"]["image"][()]
-        if image.shape == (512, 512):
-            image = np.expand_dims(image, axis=0)
-            testx.append(image)
-            label = int(trainindata[i]["cjdata"]["label"][()][0][0]) - 1
-            testy.append(label)
-
-    # Converting list to numpy array
-    trainx = np.array(trainx).reshape(-1, 512, 512, 1)
-    testx = np.array(testx).reshape(-1, 512, 512, 1)
-    trainy = np.array(trainy)
-    testy = np.array(testy)
-
-    print(trainx.shape)
-    print(testx.shape)
-    print(trainy.shape)
-    print(testy.shape)
-
-    return trainx, testx, trainy, testy
 
 def createModel() :
     # Model building starts
@@ -158,7 +99,7 @@ def createModel() :
 def runSavedModelWithStatistics() :
     model = createModel()
     savedModel = loadModelWeights(model)
-    trainx, testx, trainy, testy = loadData()
+    trainx, testx, trainy, testy = loadFigshareData()
     measureModelPerformance(model=model, testx=testx, testy=testy)
 
 
@@ -321,9 +262,50 @@ def simpleCnnWithKaggleBrain():
 
     measureModelPerformance(model=model, testx=X_test, testy=y_test)
 
+def vgg16ExtendedWithFigshareDataset():
+    IMG_SHAPE = (512, 512, 1)
+
+    X, y = loadFigshareData(filePath=filePath)
+    X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
+
+    print(len(X_train))
+    print(len(y_train))
+    print(len(X_val))
+    print(len(y_val))
+    print(len(X_test))
+    print(len(y_test))
+    print("equal") if y_val == y_test else print("not equal")
+
+    model = build_vgg16extended_model(IMG_SHAPE)
+
+    log_file_name = f'vgg16_extended_with_figshare_dataset_{int(time.time())}'
+    tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
+
+    # checkpoint
+    # unique file name that will include the epoch and the validation (development) accuracy
+    modelPath = f"{filePath}/vgg16_extended_with_figshare_dataset.model"
+    # save the model with the best validation (development) accuracy till now
+    checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+
+    start_time = time.time()
+
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=40, validation_data=(X_val, y_val),
+              callbacks=[tensorboard, checkpoint])
+
+    end_time = time.time()
+    execution_time = (end_time - start_time)
+    print(f"Elapsed time: {hms_string(execution_time)}")
+
+    history = model.history.history
+
+    plot_metrics(history)
+
+    measureModelPerformance(model=model, testx=X_test, testy=y_test)
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    simpleCnnWithKaggleBrain()
+    vgg16ExtendedWithFigshareDataset()
 
     #trainx, testx, trainy, testy = loadData()
     #model = build_model_vgg16_plus();

@@ -1,0 +1,78 @@
+from tensorflow.keras.layers import Conv2D, Input, ZeroPadding2D, BatchNormalization, Activation, MaxPooling2D, Flatten, Dense, GlobalAveragePooling2D,Dropout
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.applications.vgg16 import VGG16
+import h5py
+import os
+import random
+import cv2
+import imutils
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
+from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
+from sklearn import metrics
+import seaborn as sns
+import pandas as pd
+
+from os import listdir
+
+def build_vgg16extended_model(input_shape):
+
+  conv = VGG16(input_shape= input_shape, weights='imagenet',include_top=False)
+
+  for layer in conv.layers:
+    layer.trainable = False
+
+  x = conv.output
+  x = GlobalAveragePooling2D()(x)
+  x = Dense(1024,activation='relu')(x)
+  x = Dense(1024,activation='relu')(x)
+  x = Dense(512, activation='relu')(x)
+  x = Dropout(.2)(x)
+  pred = Dense(3,activation='softmax')(x)
+  model = Model(inputs=conv.input, outputs=pred, name='VGG16Extended')
+
+  model.summary()
+
+  model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+  return model
+
+def loadFigshareData(filePath):
+    data_dir = f'{filePath}/Brain_MRI2/BRAIN_DATA'
+    total_image = 3064
+    trainindata = []
+    for i in range(1, total_image + 1):
+      filename = str(i) + ".mat"
+      data = h5py.File(os.path.join(data_dir, filename), "r")
+      trainindata.append(data)
+
+      if i % 100 == 0:
+        print(filename)
+
+    random.shuffle(trainindata)
+
+    # Now take all the image as train and test
+    X = []
+    y = []
+
+    # For trainx and trainy
+    for i in range(total_image):
+      image = trainindata[i]["cjdata"]["image"][()]
+      if image.shape == (512, 512):
+        image = np.expand_dims(image, axis=0)
+        X.append(image)
+        # [()] operation is used to extract the value of the object
+        # [0][0] is needed at the end because it is a 2 dimension array with one value and we have to take out the scalar from it
+        label = int(trainindata[i]["cjdata"]["label"][()][0][0]) - 1
+        y.append(label)
+
+    # Converting list to numpy array
+    X = np.array(X).reshape(-1, 512, 512, 1)
+    y = np.array(y)
+
+    print(X.shape)
+    print(y.shape)
+
+    return X, y
