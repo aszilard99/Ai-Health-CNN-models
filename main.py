@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import h5py
 import keras
 
-from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance
+from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance, measureModelPerformanceMulticlass
 from figshare_dataset_utils import loadFigshareData, build_vgg16extended_model_figshare
 
 
@@ -299,7 +299,7 @@ def vgg16ExtendedWithFigshareDataset():
 
     plot_metrics(history)
 
-    measureModelPerformance(model=model, testx=X_test, testy=y_test, isBinaryClassification=False)
+    measureModelPerformanceMulticlass(model=model, testx=X_test, testy=y_test)
 
 
 # Press the green button in the gutter to run the script.

@@ -277,14 +277,11 @@ def plot_metrics(history):
     plt.legend()
     plt.show()
 
-def measureModelPerformance(model, testx, testy, isBinaryClassification=True) :
+def measureModelPerformance(model, testx, testy):
 
     pred = model.predict(testx)
 
-    if isBinaryClassification:
-        predThreshold = list(map(threshold, pred))
-    else:
-        predThreshold = list(map(threshold, map(getMax, pred)))
+    predThreshold = list(map(threshold, pred))
 
     target_names = ['No tumor', 'Tumor']
 
@@ -292,9 +289,59 @@ def measureModelPerformance(model, testx, testy, isBinaryClassification=True) :
 
     print(f'{testy.shape} testy.shape')
 
-    if isBinaryClassification:
-        tn, fp, fn, tp = confusion_matrix(testy, predThreshold).ravel()
-        print(f"tn:{tn} fp:{fp} fn:{fn} tp:{tp}")
+    tn, fp, fn, tp = confusion_matrix(testy, predThreshold).ravel()
+    print(f"tn:{tn} fp:{fp} fn:{fn} tp:{tp}")
+
+    print('Confusion Matrix')
+    print(confusion_matrix(testy, predThreshold))
+
+    print('Classification Report')
+    print(classification_report(testy, predThreshold, target_names=target_names))
+
+    cm = confusion_matrix(testy, predThreshold)
+
+    df_cm = pd.DataFrame(cm, target_names, target_names)
+    sns.heatmap(df_cm, annot=True, cmap='viridis', fmt='d')
+    plt.xlabel('Predicted Values')
+    plt.ylabel('True Values')
+    plt.title('Confusion Matrix')
+    plt.show()
+
+    ax = plt.subplot()
+    # labels, title and ticks
+    ax.set_xlabel('Predicted labels')
+    ax.set_ylabel('True labels')
+    ax.set_title('Confusion Matrix')
+    ax.xaxis.set_ticklabels(target_names)
+    ax.yaxis.set_ticklabels(target_names)
+
+    fpr, tpr, thresholds = metrics.roc_curve(testy, pred)
+    metrics.auc(fpr, tpr)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(fpr, tpr, label='actual', linestyle='solid')
+    ax.plot(np.linspace(0, 1, 100),
+            np.linspace(0, 1, 100),
+            label='baseline',
+            linestyle='--')
+    plt.title('Receiver Operating Characteristic Curve', fontsize=14)
+    plt.ylabel('Total Positive Rate', fontsize=12)
+    plt.xlabel('False Positive Rate', fontsize=12)
+    plt.legend(fontsize=12)
+    plt.show()
+
+def measureModelPerformanceMulticlass(model, testx, testy) :
+
+    pred = model.predict(testx)
+
+
+    predThreshold = np.argmax(pred, 1)
+
+    target_names = ['Meningioma', 'Glioma', 'Pituitary']
+
+    print(f'{pred.shape} pred.shape')
+
+    print(f'{testy.shape} testy.shape')
 
     print('Confusion Matrix')
     print(confusion_matrix(testy, predThreshold))
