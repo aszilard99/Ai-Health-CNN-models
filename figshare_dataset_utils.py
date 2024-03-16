@@ -7,6 +7,7 @@ import random
 import cv2
 import imutils
 import numpy as np
+import gc
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
@@ -41,8 +42,8 @@ def build_vgg16extended_model_figshare(input_shape):
 
 def loadFigshareData(filePath):
     data_dir = f'{filePath}/Brain_MRI2/BRAIN_DATA'
-    #total_image = 3064
-    total_image = 1200
+    total_image = 3064
+    #total_image = 1200
     trainindata = []
     for i in range(1, total_image + 1):
       filename = str(i) + ".mat"
@@ -69,6 +70,9 @@ def loadFigshareData(filePath):
         # [0][0] is needed at the end because it is a 2 dimension array with one value and we have to take out the scalar from it
         label = int(trainindata[i]["cjdata"]["label"][()][0][0]) - 1
         y.append(label)
+
+    del trainindata
+    gc.collect()
 
     # Converting list to numpy array\
     print(f"image shape {image.shape}")
