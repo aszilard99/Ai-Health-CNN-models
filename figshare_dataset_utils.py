@@ -17,7 +17,7 @@ import pandas as pd
 
 from os import listdir
 
-def build_vgg16extended_model(input_shape):
+def build_vgg16extended_model_figshare(input_shape):
 
   conv = VGG16(input_shape= input_shape, weights='imagenet',include_top=False)
 
@@ -41,7 +41,8 @@ def build_vgg16extended_model(input_shape):
 
 def loadFigshareData(filePath):
     data_dir = f'{filePath}/Brain_MRI2/BRAIN_DATA'
-    total_image = 3064
+    #total_image = 3064
+    total_image = 100
     trainindata = []
     for i in range(1, total_image + 1):
       filename = str(i) + ".mat"
@@ -61,15 +62,21 @@ def loadFigshareData(filePath):
     for i in range(total_image):
       image = trainindata[i]["cjdata"]["image"][()]
       if image.shape == (512, 512):
-        image = np.expand_dims(image, axis=0)
+        #image = np.expand_dims(image, axis=0)
+        #rgb_img = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
         X.append(image)
         # [()] operation is used to extract the value of the object
         # [0][0] is needed at the end because it is a 2 dimension array with one value and we have to take out the scalar from it
         label = int(trainindata[i]["cjdata"]["label"][()][0][0]) - 1
         y.append(label)
 
-    # Converting list to numpy array
-    X = np.array(X).reshape(-1, 512, 512, 1)
+    # Converting list to numpy array\
+    print(f"image shape {image.shape}")
+    X = np.array(X)
+    X = np.dstack([X] * 3)
+    X = X.reshape(-1, 512, 512, 3)
+
+    #X = np.array(X).reshape(-1, 512, 512, 3)
     y = np.array(y)
 
     print(X.shape)

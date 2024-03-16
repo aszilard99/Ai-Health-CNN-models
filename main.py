@@ -16,7 +16,7 @@ import h5py
 import keras
 
 from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance
-from figshare_dataset_utils import loadFigshareData
+from figshare_dataset_utils import loadFigshareData, build_vgg16extended_model_figshare
 
 
 epochs = 2
@@ -263,7 +263,7 @@ def simpleCnnWithKaggleBrain():
     measureModelPerformance(model=model, testx=X_test, testy=y_test)
 
 def vgg16ExtendedWithFigshareDataset():
-    IMG_SHAPE = (512, 512, 1)
+    IMG_SHAPE = (512, 512, 3)
 
     X, y = loadFigshareData(filePath=filePath)
     X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
@@ -274,9 +274,8 @@ def vgg16ExtendedWithFigshareDataset():
     print(len(y_val))
     print(len(X_test))
     print(len(y_test))
-    print("equal") if y_val == y_test else print("not equal")
 
-    model = build_vgg16extended_model(IMG_SHAPE)
+    model = build_vgg16extended_model_figshare(IMG_SHAPE)
 
     log_file_name = f'vgg16_extended_with_figshare_dataset_{int(time.time())}'
     tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
@@ -289,7 +288,7 @@ def vgg16ExtendedWithFigshareDataset():
 
     start_time = time.time()
 
-    model.fit(x=X_train, y=y_train, batch_size=32, epochs=40, validation_data=(X_val, y_val),
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=2, validation_data=(X_val, y_val),
               callbacks=[tensorboard, checkpoint])
 
     end_time = time.time()
@@ -300,7 +299,7 @@ def vgg16ExtendedWithFigshareDataset():
 
     plot_metrics(history)
 
-    measureModelPerformance(model=model, testx=X_test, testy=y_test)
+    measureModelPerformance(model=model, testx=X_test, testy=y_test, isBinaryClassification=False)
 
 
 # Press the green button in the gutter to run the script.

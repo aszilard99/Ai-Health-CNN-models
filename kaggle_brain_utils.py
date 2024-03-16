@@ -277,11 +277,14 @@ def plot_metrics(history):
     plt.legend()
     plt.show()
 
-def measureModelPerformance(model, testx, testy) :
+def measureModelPerformance(model, testx, testy, isBinaryClassification=True) :
 
     pred = model.predict(testx)
 
-    predThreshold = list(map(threshold, pred))
+    if isBinaryClassification:
+        predThreshold = list(map(threshold, pred))
+    else:
+        predThreshold = list(map(threshold, map(getMax, pred)))
 
     target_names = ['No tumor', 'Tumor']
 
@@ -289,8 +292,9 @@ def measureModelPerformance(model, testx, testy) :
 
     print(f'{testy.shape} testy.shape')
 
-    tn, fp, fn, tp = confusion_matrix(testy, predThreshold).ravel()
-    print(f"tn:{tn} fp:{fp} fn:{fn} tp:{tp}")
+    if isBinaryClassification:
+        tn, fp, fn, tp = confusion_matrix(testy, predThreshold).ravel()
+        print(f"tn:{tn} fp:{fp} fn:{fn} tp:{tp}")
 
     print('Confusion Matrix')
     print(confusion_matrix(testy, predThreshold))
@@ -329,5 +333,11 @@ def measureModelPerformance(model, testx, testy) :
     plt.xlabel('False Positive Rate', fontsize=12)
     plt.legend(fontsize=12)
     plt.show()
+
 def threshold(n):
-     return 1 if n >= 0.5 else 0
+    print(f"threshold n {n}")
+    return 1 if n >= 0.5 else 0
+
+def getMax(list):
+    print(f"max(list) {max(list)}")
+    return max(list)
