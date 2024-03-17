@@ -18,8 +18,11 @@ import h5py
 import keras
 
 from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance, measureModelPerformanceMulticlass
-from figshare_dataset_utils import loadFigshareData, build_vgg16extended_model_figshare, build_vgg16_model_figshare
+from figshare_dataset_utils import loadFigshareData, build_vgg16extended_model_figshare, build_vgg16_model_figshare, build_simple_cnn_figshare
 
+
+#os.environ["TF_DIRECTML_MAX_ALLOC_SIZE"] = "536870912" # 512MB
+os.environ["TF_DIRECTML_MAX_ALLOC_SIZE"] = "1536870912" # 1.5GB
 
 epochs = 2
 basePath = Path(__file__).parent
@@ -304,7 +307,7 @@ def vgg16ExtendedWithFigshareDataset():
     measureModelPerformanceMulticlass(model=model, testx=X_test, testy=y_test)
 
 def vgg16WithFigshareDataset():
-    IMG_SHAPE = (512, 512, 1)
+    IMG_SHAPE = (512, 512, 3)
 
     X, y = loadFigshareData(filePath=filePath)
     X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
@@ -341,10 +344,43 @@ def vgg16WithFigshareDataset():
 
     measureModelPerformanceMulticlass(model=model, testx=X_test, testy=y_test)
 
+def simpleCnnWithFigshareDataset():
+    IMG_SHAPE = (512, 512, 3)
+
+    X, y = loadFigshareData(filePath=filePath)
+    X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
+
+    model = build_simple_cnn_figshare(IMG_SHAPE)
+
+    # tensorboard
+    log_file_name = f'simple-cnn-fighshare-dataset_{int(time.time())}'
+    tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
+
+    # checkpoint
+    # unique file name that will include the epoch and the validation (development) accuracy
+    modelPath = f"{filePath}/simple-cnn-fighshare-dataset.model"
+    # save the model with the best validation (development) accuracy till now
+    checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+
+    start_time = time.time()
+
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=40, validation_data=(X_val, y_val),
+              callbacks=[tensorboard, checkpoint])
+
+    end_time = time.time()
+    execution_time = (end_time - start_time)
+    print(f"Elapsed time: {hms_string(execution_time)}")
+
+    history = model.history.history
+
+    plot_metrics(history)
+
+    measureModelPerformanceMulticlass(model=model, testx=X_test, testy=y_test)
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    vgg16WithFigshareDataset()
+    simpleCnnWithFigshareDataset()
 
     #trainx, testx, trainy, testy = loadData()
     #model = build_model_vgg16_plus();

@@ -107,3 +107,39 @@ def loadFigshareData(filePath):
     print(y.shape)
 
     return X, y
+
+def build_simple_cnn_figshare(input_shape):
+
+
+    X_input = Input(input_shape)
+
+    # Zero-Padding: pads the border of X_input with zeroes
+    X = ZeroPadding2D((2, 2))(X_input)
+
+    # CONV -> BN -> RELU Block applied to X
+    X = Conv2D(32, (7, 7), strides = (1, 1))(X)
+    print(X.shape)
+    X = BatchNormalization(axis = 3)(X)
+    print(X.shape)
+    X = Activation('relu')(X) # shape=(?, 238, 238, 32)
+
+    # MAXPOOL
+    X = MaxPooling2D((4, 4))(X) # shape=(?, 59, 59, 32)
+
+    # MAXPOOL
+    X = MaxPooling2D((4, 4))(X) # shape=(?, 14, 14, 32)
+    print(X.shape)
+    # FLATTEN X
+    X = Flatten()(X) # shape=(?, 6272)
+    print(X.shape)
+    # FULLYCONNECTED
+    X = Dense(3, activation='softmax')(X) # shape=(?, 1)
+
+    # Create model. This creates your Keras model instance, you'll use this instance to train/test the model.
+    model = Model(inputs = X_input, outputs = X, name='SimpleCNN')
+
+    model.summary()
+
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+    return model
