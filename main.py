@@ -15,7 +15,6 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
-import keras
 
 from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance, measureModelPerformanceMulticlass
 from figshare_dataset_utils import loadFigshareData, build_vgg16extended_model_figshare, build_vgg16_model_figshare, build_simple_cnn_figshare
