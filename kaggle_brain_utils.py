@@ -377,7 +377,6 @@ def measureModelPerformanceMulticlass(model, testx, testy) :
     ax.yaxis.set_ticklabels(target_names)
 
 def threshold(n):
-    print(f"threshold n {n}")
     return 1 if n >= 0.5 else 0
 
 def getMax(list):

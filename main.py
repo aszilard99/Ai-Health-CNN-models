@@ -9,6 +9,8 @@ import cv2
 from random import randint
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
 import time
+from tensorflow.keras.models import load_model
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import plot_model
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from pathlib import Path
@@ -247,7 +249,7 @@ def simpleCnnWithKaggleBrain():
 
     # checkpoint
     # unique file name that will include the epoch and the validation (development) accuracy
-    modelPath = f"{filePath}/simple-cnn-parameters-improvement.model"
+    modelPath = f"{filePath}/simple-cnn-figshare_dataset.model"
     # save the model with the best validation (development) accuracy till now
     checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
@@ -261,9 +263,12 @@ def simpleCnnWithKaggleBrain():
     print(f"Elapsed time: {hms_string(execution_time)}")
 
     history = model.history.history
-
     plot_metrics(history)
 
+    # delete the the model the fit method returned, and load the best one that was saved during training
+    del model
+
+    model = load_model(f"{filePath}/simple-cnn-figshare_dataset.model")
     measureModelPerformance(model=model, testx=X_test, testy=y_test)
 
 def vgg16ExtendedWithFigshareDataset():
@@ -349,7 +354,16 @@ def simpleCnnWithFigshareDataset():
     X, y = loadFigshareData(filePath=filePath)
     X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
 
+    print(f"X_train.shape {X_train.shape}")
+    print(f"X_val.shape {X_val.shape}")
+    print(f"X_test.shape {X_test.shape}")
+
+
     model = build_simple_cnn_figshare(IMG_SHAPE)
+
+    model.summary()
+
+    model.compile(optimizer=Adam(learning_rate=1e-4), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     # tensorboard
     log_file_name = f'simple-cnn-fighshare-dataset_{int(time.time())}'
@@ -357,7 +371,7 @@ def simpleCnnWithFigshareDataset():
 
     # checkpoint
     # unique file name that will include the epoch and the validation (development) accuracy
-    modelPath = f"{filePath}/simple-cnn-fighshare-dataset.model"
+    modelPath = f"{filePath}/simple-cnn-fighshare-dataset2.model"
     # save the model with the best validation (development) accuracy till now
     checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
@@ -371,15 +385,16 @@ def simpleCnnWithFigshareDataset():
     print(f"Elapsed time: {hms_string(execution_time)}")
 
     history = model.history.history
-
     plot_metrics(history)
 
+    #delete the the model the fit method returned, and load the best one that was saved during training
+    del model
+    model = load_model(f"{filePath}/simple-cnn-fighshare-dataset2.model")
     measureModelPerformanceMulticlass(model=model, testx=X_test, testy=y_test)
-
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    simpleCnnWithFigshareDataset()
+    simpleCnnWithKaggleBrain()
 
     #trainx, testx, trainy, testy = loadData()
     #model = build_model_vgg16_plus();

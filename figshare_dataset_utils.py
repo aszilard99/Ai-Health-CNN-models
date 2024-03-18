@@ -138,8 +138,4 @@ def build_simple_cnn_figshare(input_shape):
     # Create model. This creates your Keras model instance, you'll use this instance to train/test the model.
     model = Model(inputs = X_input, outputs = X, name='SimpleCNN')
 
-    model.summary()
-
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
     return model
