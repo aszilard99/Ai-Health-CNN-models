@@ -8,7 +8,6 @@ import h5py
 import cv2
 from random import randint
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
-import time
 from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import plot_model
@@ -17,8 +16,9 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
+import time
 
-from kaggle_brain_utils import  crop_brain_contour, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance, measureModelPerformanceMulticlass
+from kaggle_brain_utils import  crop_brain_contour, load_image, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance, measureModelPerformanceMulticlass
 from figshare_dataset_utils import loadFigshareData, build_vgg16extended_model_figshare, build_vgg16_model_figshare, build_simple_cnn_figshare
 
 
@@ -271,6 +271,25 @@ def simpleCnnWithKaggleBrain():
     model = load_model(f"{filePath}/simple-cnn-figshare_dataset.model")
     measureModelPerformance(model=model, testx=X_test, testy=y_test)
 
+def simpleCNNPredict():
+
+    model = load_model(f"{filePath}/simple-cnn-kaggle-brain.model")
+
+    path = filePath + '/' + 'augmented_data' + '/' + 'yes' + '/' + 'aug_Y1_0_2900.jpg'
+
+    image = load_image(path, (240, 240))
+
+    X = np.array(image)
+    X = np.expand_dims(X, 0)
+
+    t0 = time.clock();
+    pred = model.predict(X)
+    t1 = time.clock();
+
+    print(f'time {t1 - t0}')
+    print(f'pred {pred}')
+
+
 def vgg16ExtendedWithFigshareDataset():
     IMG_SHAPE = (512, 512, 3)
 
@@ -394,7 +413,9 @@ def simpleCnnWithFigshareDataset():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    simpleCnnWithKaggleBrain()
+    #simpleCnnWithKaggleBrain()
+
+    simpleCNNPredict()
 
     #trainx, testx, trainy, testy = loadData()
     #model = build_model_vgg16_plus();

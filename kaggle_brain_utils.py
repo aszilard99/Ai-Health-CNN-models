@@ -14,6 +14,22 @@ import pandas as pd
 import gc
 from os import listdir
 
+def load_image(path, image_size):
+
+    image_width, image_height = image_size
+
+    # load the image
+    image = cv2.imread(path)
+
+    # crop the brain and ignore the unnecessary rest part of the image
+    image = crop_brain_contour(image, plot=False)
+    # resize image
+    image = cv2.resize(image, dsize=(image_width, image_height), interpolation=cv2.INTER_CUBIC)
+    # normalize values
+    image = image / 255.
+
+    return image
+
 def load_data(resources_path , dir_list, image_size):
     """
     Read images, resize and normalize them.
@@ -27,18 +43,10 @@ def load_data(resources_path , dir_list, image_size):
     # load all images in a directory
     X = []
     y = []
-    image_width, image_height = image_size
 
     for directory in dir_list:
         for filename in listdir(resources_path + '/' + directory):
-            # load the image
-            image = cv2.imread(resources_path + '/' + directory + '/' + filename)
-            # crop the brain and ignore the unnecessary rest part of the image
-            image = crop_brain_contour(image, plot=False)
-            # resize image
-            image = cv2.resize(image, dsize=(image_width, image_height), interpolation=cv2.INTER_CUBIC)
-            # normalize values
-            image = image / 255.
+            image = load_image(resources_path + '/' + directory + '/' + filename, image_size)
             # convert image to numpy array and append it to X
             X.append(image)
             # append a value of 1 to the target array if the image
@@ -47,7 +55,6 @@ def load_data(resources_path , dir_list, image_size):
                 y.append([1])
             else:
                 y.append([0])
-
     X = np.array(X)
     y = np.array(y)
 
