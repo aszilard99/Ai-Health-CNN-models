@@ -249,7 +249,7 @@ def simpleCnnWithKaggleBrain():
 
     # checkpoint
     # unique file name that will include the epoch and the validation (development) accuracy
-    modelPath = f"{filePath}/simple-cnn-figshare_dataset.model"
+    modelPath = f"{filePath}/simple-cnn-kaggle_dataset.pb"
     # save the model with the best validation (development) accuracy till now
     checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
@@ -268,7 +268,7 @@ def simpleCnnWithKaggleBrain():
     # delete the the model the fit method returned, and load the best one that was saved during training
     del model
 
-    model = load_model(f"{filePath}/simple-cnn-figshare_dataset.model")
+    model = load_model(f"{filePath}/simple-cnn-kaggle_dataset.pb")
     measureModelPerformance(model=model, testx=X_test, testy=y_test)
 
 def simpleCNNPredict():
@@ -413,9 +413,9 @@ def simpleCnnWithFigshareDataset():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    #simpleCnnWithKaggleBrain()
+    simpleCnnWithKaggleBrain()
 
-    simpleCNNPredict()
+    #simpleCNNPredict()
 
     #trainx, testx, trainy, testy = loadData()
     #model = build_model_vgg16_plus();
