@@ -446,7 +446,7 @@ def complexCNNWithFigshare():
 
     # checkpoint
     # unique file name that will include the epoch and the validation (development) accuracy
-    modelPath = f"{filePath}/complex-cnn-fighshare-dataset2.model"
+    modelPath = f"{filePath}/complex-cnn-fighshare-dataset.model"
     # save the model with the best validation (development) accuracy till now
     checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
@@ -464,7 +464,7 @@ def complexCNNWithFigshare():
 
     # delete the the model the fit method returned, and load the best one that was saved during training
     del model
-    model = load_model(f"{filePath}/simple-cnn-fighshare-dataset2.model")
+    model = load_model(f"{filePath}/complex-cnn-fighshare-dataset.model")
     measureModelPerformanceMulticlass(model=model, testx=X_test, testy=y_test)
 
 # Press the green button in the gutter to run the script.

@@ -113,7 +113,7 @@ def reshapeData(X, y, isImageSingleColorChannel):
 def build_complex_cnn_figshare():
 
     # Initial  BLock of the model
-    ini_input = Input(shape=(512, 512, 3), name="image")
+    ini_input = Input(shape=(512, 512, 1), name="image")
 
     x1 = Conv2D(64, (22, 22), strides=2)(ini_input)
     x1 = MaxPooling2D((4, 4))(x1)
