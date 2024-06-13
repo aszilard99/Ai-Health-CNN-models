@@ -20,16 +20,17 @@ def load_image(path, image_size):
     image_width, image_height = image_size
 
     # load the image
-    image = cv2.imread(path)
+    image = plt.imread(path)
+    #this is done by the process_image function
 
-    # crop the brain and ignore the unnecessary rest part of the image
-    image = crop_brain_contour(image, plot=False)
-    # resize image
-    print("Resizing image")
-    image = cv2.resize(image, dsize=(image_width, image_height), interpolation=cv2.INTER_CUBIC)
-    print("Resized image")
+    # # crop the brain and ignore the unnecessary rest part of the image
+    # image = crop_brain_contour(image, plot=False)
+    # # resize image
+    # print("Resizing image")
+    # image = cv2.resize(image, dsize=(image_width, image_height), interpolation=cv2.INTER_CUBIC)
+    # print("Resized image")
     # normalize values
-    image = image / 255.
+    #image = image / 255.
 
     return image
 
@@ -46,30 +47,78 @@ def load_data(resources_path , dir_list, image_size):
     # load all images in a directory
     X = []
     y = []
+    counter = 0
 
     for directory in dir_list:
+        print(resources_path + '/' + directory)
         for filename in listdir(resources_path + '/' + directory):
             print("loading images")
             image = load_image(resources_path + '/' + directory + '/' + filename, image_size)
+            print(f"image shape {image.shape}, filename {filename}, counter {counter}")
             # convert image to numpy array and append it to X
-            X.append(image)
+            if counter == 0:
+                X = image[np.newaxis, :, :, :]
+            else:
+                #a = np.append(a, c[np.newaxis, :], axis=0)
+                X = np.append(X, image[np.newaxis, :, :, :], axis=0)
             # append a value of 1 to the target array if the image
             # is in the folder named 'yes', otherwise append 0.
+            counter = counter + 1
             if directory[-3:] == 'yes':
                 y.append([1])
             else:
                 y.append([0])
-    X = np.array(X)
+    print("finished loading images")
+    #X = np.array(X)
     y = np.array(y)
-
+    print("finished converting images to np.array")
     # Shuffle the data
-    X, y = shuffle(X, y)
+    #X, y = shuffle(X, y)
+    #print("finished shuffleing images")
 
     print(f'Number of examples is: {len(X)}')
     print(f'X shape is: {X.shape}')
     print(f'y shape is: {y.shape}')
 
     return X, y
+
+def process_batch_of_images(resources_path , dir_list, image_size):
+    """
+    Read images, resize and normalize and then save them.
+    Arguments:
+        dir_list: list of strings representing file directories.
+        image_size: the size that the images should be resized to
+    Returns:
+        X: A numpy array with shape = (#_examples, image_width, image_height, #_channels)
+        y: A numpy array with shape = (#_examples, 1)
+    """
+    for directory in dir_list:
+        for filename in listdir(resources_path + 'augmented_data' + '/' + directory):
+            print("loading image")
+            image = process_image(resources_path + 'augmented_data' + '/' + directory + '/' + filename, image_size)
+            print("saving image to ")
+            print(resources_path + 'resized_images' + '/' + directory + '/' + filename)
+            cv2.imwrite(resources_path + 'resized_images' + '/' + directory + '/' + filename, image)
+            print("saved image")
+
+def process_image(path, image_size):
+
+    image_width, image_height = image_size
+
+    # load the image
+    image = cv2.imread(path)
+
+    # crop the brain and ignore the unnecessary rest part of the image
+    image = crop_brain_contour(image, plot=False)
+    # resize image
+    print("Resizing image")
+    image = cv2.resize(image, dsize=(image_width, image_height), interpolation=cv2.INTER_CUBIC)
+    print("Resized image")
+
+    image = image / 255.
+
+    return image
+
 def crop_brain_contour(image, plot=False):
 
     # Convert the image to grayscale, and blur it slightly

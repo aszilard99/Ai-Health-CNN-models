@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import h5py
 import time
 
-from kaggle_brain_utils import  build_complex_cnn_with_kaggle_brain, load_image, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance, measureModelPerformanceMulticlass
+from kaggle_brain_utils import  process_batch_of_images, build_complex_cnn_with_kaggle_brain, load_image, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance, measureModelPerformanceMulticlass
 from figshare_dataset_utils import reshapeData, loadFigshareData, build_vgg16extended_model_figshare, build_vgg16_model_figshare, build_simple_cnn_kaggle_brain, build_complex_cnn_figshare
 
 #os.environ["TF_DIRECTML_MAX_ALLOC_SIZE"] = "536870912" # 512MB
@@ -181,7 +181,7 @@ def simpleCnnWithKaggleBrain():
 
     model = build_simple_cnn(IMG_SHAPE)
     model.summary()
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=Adam(decay=0.1), loss='binary_crossentropy', metrics=['accuracy'])
     # tensorboard
     log_file_name = f'brain_tumor_detection_cnn_{int(time.time())}'
     tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
@@ -270,7 +270,7 @@ def vgg16ExtendedPredict():
 def vgg16ExtendedWithFigshareDataset():
     IMG_SHAPE = (512, 512, 3)
 
-    X, y = loadFigshareData(filePath=filePath)
+    X, y = loadFigshareData(filePath=filePath,  isImageSingleColorChannel=False)
     X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
 
     print(len(X_train))
@@ -309,7 +309,7 @@ def vgg16ExtendedWithFigshareDataset():
 def vgg16WithFigshareDataset():
     IMG_SHAPE = (512, 512, 3)
 
-    X, y = loadFigshareData(filePath=filePath)
+    X, y = loadFigshareData(filePath=filePath, isImageSingleColorChannel=False)
     X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
 
     print(len(X_train))
@@ -321,45 +321,46 @@ def vgg16WithFigshareDataset():
 
     model = build_vgg16_model_figshare(IMG_SHAPE)
 
-    #log_file_name = f'vgg16_with_figshare_dataset_{int(time.time())}'
-    #tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
+    log_file_name = f'vgg16_with_figshare_dataset_{int(time.time())}'
+    tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
 
     # checkpoint
     # unique file name that will include the epoch and the validation (development) accuracy
-    #modelPath = f"{filePath}/vgg16_with_figshare_dataset.model"
+    modelPath = f"{filePath}/vgg16_with_figshare_dataset.model"
     # save the model with the best validation (development) accuracy till now
-    #checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
     start_time = time.time()
 
-    model.fit(x=X_train, y=y_train, batch_size=32, epochs=2, validation_data=(X_val, y_val))
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=2, validation_data=(X_val, y_val), callbacks=[tensorboard, checkpoint])
 
     end_time = time.time()
     execution_time = (end_time - start_time)
     print(f"Elapsed time: {hms_string(execution_time)}")
 
     history = model.history.history
-
     plot_metrics(history)
 
+    # delete the the model the fit method returned, and load the best one that was saved during training
+    del model
+    model = load_model(f"{filePath}/vgg16_with_figshare_dataset.model")
     measureModelPerformanceMulticlass(model=model, testx=X_test, testy=y_test)
 
 def simpleCnnWithFigshareDataset():
     IMG_SHAPE = (512, 512, 3)
 
-    X, y = loadFigshareData(filePath=filePath)
+    X, y = loadFigshareData(filePath=filePath, isImageSingleColorChannel=False)
     X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
 
     print(f"X_train.shape {X_train.shape}")
     print(f"X_val.shape {X_val.shape}")
     print(f"X_test.shape {X_test.shape}")
 
-
     model = build_simple_cnn_kaggle_brain(IMG_SHAPE)
 
     model.summary()
 
-    model.compile(optimizer=Adam(learning_rate=1e-4), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=Adam(decay=0.01), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     # tensorboard
     log_file_name = f'simple-cnn-fighshare-dataset_{int(time.time())}'
@@ -393,12 +394,13 @@ def complexCNNWithKaggleBrain():
     IMG_WIDTH, IMG_HEIGHT = (512, 512)
     IMG_SHAPE = (IMG_WIDTH, IMG_HEIGHT, 3)
 
-    X, y = load_data(filePath + '/',  ['no', 'yes'], (IMG_WIDTH, IMG_HEIGHT))
+    X, y = load_data(filePath + '/' + 'resized_images' + '/',  ['no', 'yes'], (IMG_WIDTH, IMG_HEIGHT))
+    #X, y = load_data(filePath + '/', ['no', 'yes'], (IMG_WIDTH, IMG_HEIGHT))
     X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
 
     model = build_complex_cnn_with_kaggle_brain()
     model.summary()
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=Adam(decay=0.1), loss='binary_crossentropy', metrics=['accuracy'])
 
     # tensorboard
     log_file_name = f'complex_cnn_{int(time.time())}'
@@ -412,7 +414,7 @@ def complexCNNWithKaggleBrain():
 
     start_time = time.time()
 
-    model.fit(x=X_train, y=y_train, batch_size=32, epochs=80, validation_data=(X_val, y_val),
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=40, validation_data=(X_val, y_val),
               callbacks=[tensorboard, checkpoint])
 
     end_time = time.time()
@@ -439,7 +441,7 @@ def complexCNNWithFigshare():
 
     model.summary()
 
-    model.compile(optimizer=Adam(learning_rate=1e-4), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=Adam(decay=0.1), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     log_file_name = f'complex-cnn-fighshare-dataset_{int(time.time())}'
     tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
@@ -452,7 +454,7 @@ def complexCNNWithFigshare():
 
     start_time = time.time()
 
-    model.fit(x=X_train, y=y_train, batch_size=32, epochs=5, validation_data=(X_val, y_val),
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=40, validation_data=(X_val, y_val),
               callbacks=[tensorboard, checkpoint])
 
     end_time = time.time()
@@ -470,7 +472,9 @@ def complexCNNWithFigshare():
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
-    complexCNNWithFigshare()
+    simpleCnnWithKaggleBrain()
+
+    #process_batch_of_images(filePath + '/',  ['no', 'yes'], (512, 512))
 
     #loaded_model = load_model("vgg16extended-cnn-parameters-improvement.model")
     #tf.saved_model.save(loaded_model, "vgg16extended-cnn-parameters-improvement")

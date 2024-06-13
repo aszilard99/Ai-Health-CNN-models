@@ -61,9 +61,9 @@ def loadFigshareData(filePath, isImageSingleColorChannel):
 
       if i % 100 == 0:
         print(filename)
-
+    print("shuffling")
     random.shuffle(trainindata)
-
+    print("shuffled")
     # Now take all the image as train and test
     X = []
     y = []
@@ -83,7 +83,9 @@ def loadFigshareData(filePath, isImageSingleColorChannel):
     del trainindata
     gc.collect()
 
+    print("reshaping data")
     X, y = reshapeData(X, y, isImageSingleColorChannel)
+    print("reshaped data")
 
     return X, y
 
