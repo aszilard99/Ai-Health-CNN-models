@@ -1,6 +1,7 @@
 from tensorflow.keras.layers import Conv2D, Input, ZeroPadding2D, BatchNormalization, Activation, MaxPooling2D, Flatten, Dense, GlobalAveragePooling2D,Dropout
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.applications.vgg16 import VGG16
+import tensorflow as tf
 import cv2
 import imutils
 import numpy as np
@@ -24,7 +25,9 @@ def load_image(path, image_size):
     # crop the brain and ignore the unnecessary rest part of the image
     image = crop_brain_contour(image, plot=False)
     # resize image
+    print("Resizing image")
     image = cv2.resize(image, dsize=(image_width, image_height), interpolation=cv2.INTER_CUBIC)
+    print("Resized image")
     # normalize values
     image = image / 255.
 
@@ -46,6 +49,7 @@ def load_data(resources_path , dir_list, image_size):
 
     for directory in dir_list:
         for filename in listdir(resources_path + '/' + directory):
+            print("loading images")
             image = load_image(resources_path + '/' + directory + '/' + filename, image_size)
             # convert image to numpy array and append it to X
             X.append(image)
@@ -67,10 +71,6 @@ def load_data(resources_path , dir_list, image_size):
 
     return X, y
 def crop_brain_contour(image, plot=False):
-
-    #import imutils
-    #import cv2
-    #from matplotlib import pyplot as plt
 
     # Convert the image to grayscale, and blur it slightly
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -231,6 +231,45 @@ def build_vgg16_model(input_shape):
     x = Dense(units=4096,activation="relu")(x)
     pred = Dense(units=1, activation="sigmoid")(x)
     model = Model(inputs=conv.input, outputs=pred, name='VGG16')
+
+    return model
+
+def build_complex_cnn_with_kaggle_brain() :
+
+    tf.keras.backend.clear_session()
+
+    # Initial  BLock of the model
+    ini_input = Input(shape=(512, 512, 3), name="image")
+
+    x1 = Conv2D(64, (22, 22), strides=2, padding="same")(ini_input)
+    x1 = MaxPooling2D((4, 4))(x1)
+    x1 = BatchNormalization()(x1)
+
+    x2 = Conv2D(128, (11, 11), strides=2, padding="same")(x1)
+    x2 = MaxPooling2D((2, 2))(x2)
+    x2 = BatchNormalization()(x2)
+
+    x3 = Conv2D(256, (7, 7), strides=2, padding="same")(x2)
+    x3 = MaxPooling2D((2, 2))(x3)
+    x3 = BatchNormalization()(x3)
+
+    x4 = Conv2D(512, (3, 3), strides=2, padding="same")(x3)
+    x4 = MaxPooling2D((2, 2))(x4)
+    x4 = BatchNormalization()(x4)
+
+    x5 = GlobalAveragePooling2D()(x4)
+    x5 = Activation("relu")(x5)
+
+    x6 = Dense(1024, "relu")(x5)
+    x6 = BatchNormalization()(x6)
+    x7 = Dense(512, "relu")(x6)
+    x7 = BatchNormalization()(x7)
+    x8 = Dense(256, "relu")(x7)
+    x8 = BatchNormalization()(x8)
+    x8 = Dropout(.2)(x8)
+    pred = Dense(units=1, activation="sigmoid")(x8)
+
+    model = Model(inputs=ini_input, outputs=pred)
 
     return model
 

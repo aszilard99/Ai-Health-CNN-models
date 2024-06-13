@@ -18,9 +18,8 @@ import matplotlib.pyplot as plt
 import h5py
 import time
 
-from kaggle_brain_utils import  crop_brain_contour, load_image, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance, measureModelPerformanceMulticlass
-from figshare_dataset_utils import loadFigshareData, build_vgg16extended_model_figshare, build_vgg16_model_figshare, build_simple_cnn_figshare
-
+from kaggle_brain_utils import  build_complex_cnn_with_kaggle_brain, load_image, load_data, build_vgg16extended_model, build_vgg16_model, build_simple_cnn, hms_string, split_data, plot_metrics, measureModelPerformance, measureModelPerformanceMulticlass
+from figshare_dataset_utils import reshapeData, loadFigshareData, build_vgg16extended_model_figshare, build_vgg16_model_figshare, build_simple_cnn_kaggle_brain, build_complex_cnn_figshare
 
 #os.environ["TF_DIRECTML_MAX_ALLOC_SIZE"] = "536870912" # 512MB
 os.environ["TF_DIRECTML_MAX_ALLOC_SIZE"] = "1536870912" # 1.5GB
@@ -48,66 +47,6 @@ def trainModel(model, trainx, testx, trainy, testy) :
     model.save(f'{filePath}/my_model_epochs_{epochs}_{num}.h5')
 
     model.save_weights(f'{filePath}/my_weight_epochs_{epochs}__{num}')
-
-def createModel() :
-    # Model building starts
-    import tensorflow as tf
-    from tensorflow import keras
-    from tensorflow.keras import layers
-    import keras
-    from keras.models import Sequential
-    from keras.layers import Dense, Activation, Dropout, Flatten, Conv2D, MaxPooling2D, GlobalAveragePooling2D
-    from tensorflow.keras.layers import BatchNormalization
-    import numpy as np
-
-    tf.keras.backend.clear_session()
-
-    # Initial  BLock of the model
-    ini_input = keras.Input(shape=(512, 512, 1), name="image")
-
-    x1 = layers.Conv2D(64, (22, 22), strides=2)(ini_input)
-    x1 = layers.MaxPooling2D((4, 4))(x1)
-    x1 = layers.BatchNormalization()(x1)
-
-    x2 = layers.Conv2D(128, (11, 11), strides=2, padding="same")(x1)
-    x2 = layers.MaxPooling2D((2, 2))(x2)
-    x2 = layers.BatchNormalization()(x2)
-
-    x3 = layers.Conv2D(256, (7, 7), strides=2, padding="same")(x2)
-    x3 = layers.MaxPooling2D((2, 2))(x3)
-    x3 = layers.BatchNormalization()(x3)
-
-    x4 = layers.Conv2D(512, (3, 3), strides=2, padding="same")(x3)
-    x4 = layers.MaxPooling2D((2, 2))(x4)
-    x4 = layers.BatchNormalization()(x4)
-
-    x5 = layers.GlobalAveragePooling2D()(x4)
-    x5 = layers.Activation("relu")(x5)
-
-    x6 = layers.Dense(1024, "relu")(x5)
-    x6 = layers.BatchNormalization()(x6)
-    x7 = layers.Dense(512, "relu")(x6)
-    x7 = layers.BatchNormalization()(x7)
-    x8 = layers.Dense(256, "relu")(x7)
-    x8 = layers.BatchNormalization()(x8)
-    x8 = layers.Dropout(.2)(x8)
-    x9 = layers.Dense(3)(x8)
-    pred = layers.Activation("softmax")(x9)
-
-    model = keras.Model(inputs=ini_input, outputs=pred)
-
-    model.summary()
-
-    model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-
-    return model
-
-def runSavedModelWithStatistics() :
-    model = createModel()
-    savedModel = loadModelWeights(model)
-    trainx, testx, trainy, testy = loadFigshareData()
-    measureModelPerformance(model=model, testx=testx, testy=testy)
-
 
 def displayImage(fileName) :
 
@@ -273,11 +212,22 @@ def simpleCnnWithKaggleBrain():
 
 def simpleCNNPredict():
 
-    model = load_model(f"{filePath}/simple-cnn-kaggle-brain.model")
+    model = load_model(f"{filePath}/cnn-parameters-improvement")
+    #model = load_model(f"{filePath}/simple-cnn-kaggle-brain-converted")
+    #model = load_model(f"{filePath}/colab_simpleCnn_40_epoch_SavedModel_format")
 
-    path = filePath + '/' + 'augmented_data' + '/' + 'yes' + '/' + 'aug_Y1_0_2900.jpg'
+    filename = 'aug_Y9_0_5894'
+
+    path = filePath + '/' + 'augmented_data' + '/' + 'yes' + '/' + filename + '.jpg'
+    #path = f"{basePath}/aug_Y9_0_5894_python_processed.jpg"
+    #path = f"{basePath}/javaProcessed.jpg"
 
     image = load_image(path, (240, 240))
+
+    #image = cv2.imread(path)
+    #image = image / 255.
+
+    plt.imsave(filename + '_python_processed.jpg', image)
 
     X = np.array(image)
     X = np.expand_dims(X, 0)
@@ -289,6 +239,33 @@ def simpleCNNPredict():
     print(f'time {t1 - t0}')
     print(f'pred {pred}')
 
+def vgg16ExtendedPredict():
+    model = load_model(f"{filePath}/vgg16extended-cnn-parameters-improvement")
+
+    filename = 'aug_2 no._0_3779'
+
+    path = filePath + '/' + 'augmented_data' + '/' + 'no' + '/' + filename + '.jpg'
+    # path = f"{basePath}/aug_Y9_0_5894_python_processed.jpg"
+    #path = f"{basePath}/javaProcessed.jpg"
+
+    image = load_image(path, (240, 240))
+
+    #image = cv2.imread(path)
+    #image = image / 255.
+
+    print(f'image[100][100][0] {image[100][100][0]}')
+
+    # plt.imsave(filename + '_python_processed.jpg', image)
+
+    X = np.array(image)
+    X = np.expand_dims(X, 0)
+
+    t0 = time.clock();
+    pred = model.predict(X)
+    t1 = time.clock();
+
+    print(f'time {t1 - t0}')
+    print(f'pred {pred}')
 
 def vgg16ExtendedWithFigshareDataset():
     IMG_SHAPE = (512, 512, 3)
@@ -378,7 +355,7 @@ def simpleCnnWithFigshareDataset():
     print(f"X_test.shape {X_test.shape}")
 
 
-    model = build_simple_cnn_figshare(IMG_SHAPE)
+    model = build_simple_cnn_kaggle_brain(IMG_SHAPE)
 
     model.summary()
 
@@ -411,11 +388,101 @@ def simpleCnnWithFigshareDataset():
     model = load_model(f"{filePath}/simple-cnn-fighshare-dataset2.model")
     measureModelPerformanceMulticlass(model=model, testx=X_test, testy=y_test)
 
+def complexCNNWithKaggleBrain():
+
+    IMG_WIDTH, IMG_HEIGHT = (512, 512)
+    IMG_SHAPE = (IMG_WIDTH, IMG_HEIGHT, 3)
+
+    X, y = load_data(filePath + '/',  ['no', 'yes'], (IMG_WIDTH, IMG_HEIGHT))
+    X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
+
+    model = build_complex_cnn_with_kaggle_brain()
+    model.summary()
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+    # tensorboard
+    log_file_name = f'complex_cnn_{int(time.time())}'
+    tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
+
+    # checkpoint
+    # unique file name that will include the epoch and the validation (development) accuracy
+    modelPath = f"{filePath}/complex-cnn-kaggle_dataset.pb"
+    # save the model with the best validation (development) accuracy till now
+    checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+
+    start_time = time.time()
+
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=80, validation_data=(X_val, y_val),
+              callbacks=[tensorboard, checkpoint])
+
+    end_time = time.time()
+    execution_time = (end_time - start_time)
+    print(f"Elapsed time: {hms_string(execution_time)}")
+
+    history = model.history.history
+    plot_metrics(history)
+    # delete the the model the fit method returned, and load the best one that was saved during training
+    del model
+
+    model = load_model(f"{filePath}/complex-cnn-kaggle_dataset.pb")
+    measureModelPerformance(model=model, testx=X_test, testy=y_test)
+
+def complexCNNWithFigshare():
+    X, y = loadFigshareData(filePath=filePath, isImageSingleColorChannel=True)
+    X_train, y_train, X_val, y_val, X_test, y_test = split_data(X, y, test_size=0.3)
+
+    print(f"X_train.shape {X_train.shape}")
+    print(f"X_val.shape {X_val.shape}")
+    print(f"X_test.shape {X_test.shape}")
+
+    model = build_complex_cnn_figshare()
+
+    model.summary()
+
+    model.compile(optimizer=Adam(learning_rate=1e-4), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+    log_file_name = f'complex-cnn-fighshare-dataset_{int(time.time())}'
+    tensorboard = TensorBoard(log_dir=f'logs/{log_file_name}')
+
+    # checkpoint
+    # unique file name that will include the epoch and the validation (development) accuracy
+    modelPath = f"{filePath}/complex-cnn-fighshare-dataset2.model"
+    # save the model with the best validation (development) accuracy till now
+    checkpoint = ModelCheckpoint(modelPath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+
+    start_time = time.time()
+
+    model.fit(x=X_train, y=y_train, batch_size=32, epochs=5, validation_data=(X_val, y_val),
+              callbacks=[tensorboard, checkpoint])
+
+    end_time = time.time()
+    execution_time = (end_time - start_time)
+    print(f"Elapsed time: {hms_string(execution_time)}")
+
+    history = model.history.history
+    plot_metrics(history)
+
+    # delete the the model the fit method returned, and load the best one that was saved during training
+    del model
+    model = load_model(f"{filePath}/simple-cnn-fighshare-dataset2.model")
+    measureModelPerformanceMulticlass(model=model, testx=X_test, testy=y_test)
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    simpleCnnWithKaggleBrain()
 
-    #simpleCNNPredict()
+    complexCNNWithFigshare()
+
+    #loaded_model = load_model("vgg16extended-cnn-parameters-improvement.model")
+    #tf.saved_model.save(loaded_model, "vgg16extended-cnn-parameters-improvement")
+
+    ## debug only to check how a normalized picture looks
+
+    ## compare normalized image pixel values with the java opencv
+    #path = f"{basePath}/processedNormalizedImg.jpg"
+    #image = cv2.imread(path)
+    #print(f"image pixel value {image[100][100][0]}")
+    #plt.imshow(image)
+    #plt.show()
 
     #trainx, testx, trainy, testy = loadData()
     #model = build_model_vgg16_plus();

@@ -4,19 +4,8 @@ from tensorflow.keras.applications.vgg16 import VGG16
 import h5py
 import os
 import random
-import cv2
-import imutils
 import numpy as np
 import gc
-import matplotlib.pyplot as plt
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
-from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
-from sklearn import metrics
-import seaborn as sns
-import pandas as pd
-
-from os import listdir
 
 def build_vgg16extended_model_figshare(input_shape):
 
@@ -60,7 +49,7 @@ def build_vgg16_model_figshare(input_shape):
 
     return model
 
-def loadFigshareData(filePath):
+def loadFigshareData(filePath, isImageSingleColorChannel):
     data_dir = f'{filePath}/Brain_MRI2/BRAIN_DATA'
     total_image = 3064
 
@@ -94,21 +83,71 @@ def loadFigshareData(filePath):
     del trainindata
     gc.collect()
 
-    # Converting list to numpy array\
-    print(f"image shape {image.shape}")
-    X = np.array(X)
-    X = np.dstack([X] * 3)
-    X = X.reshape(-1, 512, 512, 3)
-
-    #X = np.array(X).reshape(-1, 512, 512, 3)
-    y = np.array(y)
-
-    print(X.shape)
-    print(y.shape)
+    X, y = reshapeData(X, y, isImageSingleColorChannel)
 
     return X, y
 
-def build_simple_cnn_figshare(input_shape):
+def reshapeData(X, y, isImageSingleColorChannel):
+    if (isImageSingleColorChannel == True):
+        print(f"single color channel mode")
+        X = np.array(X)
+        X = X.reshape(-1, 512, 512, 1)
+
+        y = np.array(y)
+
+        print(X.shape)
+        print(y.shape)
+        return X, y
+    else:
+        print(f"multi color channel mode")
+        X = np.array(X)
+        X = np.dstack([X] * 3)
+        X = X.reshape(-1, 512, 512, 3)
+
+        y = np.array(y)
+
+        print(X.shape)
+        print(y.shape)
+        return X,y
+
+def build_complex_cnn_figshare():
+
+    # Initial  BLock of the model
+    ini_input = Input(shape=(512, 512, 3), name="image")
+
+    x1 = Conv2D(64, (22, 22), strides=2)(ini_input)
+    x1 = MaxPooling2D((4, 4))(x1)
+    x1 = BatchNormalization()(x1)
+
+    x2 = Conv2D(128, (11, 11), strides=2, padding="same")(x1)
+    x2 = MaxPooling2D((2, 2))(x2)
+    x2 = BatchNormalization()(x2)
+
+    x3 = Conv2D(256, (7, 7), strides=2, padding="same")(x2)
+    x3 = MaxPooling2D((2, 2))(x3)
+    x3 = BatchNormalization()(x3)
+
+    x4 = Conv2D(512, (3, 3), strides=2, padding="same")(x3)
+    x4 = MaxPooling2D((2, 2))(x4)
+    x4 = BatchNormalization()(x4)
+
+    x5 = GlobalAveragePooling2D()(x4)
+    x5 = Activation("relu")(x5)
+
+    x6 = Dense(1024, "relu")(x5)
+    x6 = BatchNormalization()(x6)
+    x7 = Dense(512, "relu")(x6)
+    x7 = BatchNormalization()(x7)
+    x8 = Dense(256, "relu")(x7)
+    x8 = BatchNormalization()(x8)
+    x8 = Dropout(.2)(x8)
+    pred = Dense(units=3, activation="softmax")(x8)
+
+    model = Model(inputs=ini_input, outputs=pred)
+
+    return model
+
+def build_simple_cnn_kaggle_brain(input_shape):
 
 
     X_input = Input(input_shape)
